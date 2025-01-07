@@ -1,0 +1,68 @@
+--View kontrol kodu
+IF OBJECT_ID('dbo.RandevuBilgileriView') IS NOT NULL
+BEGIN
+    DROP VIEW dbo.RandevuBilgileriView;
+END
+GO
+
+
+CREATE VIEW dbo.RandevuBilgileriView
+AS
+SELECT
+    H.TC AS HASTA_TC,
+    H.ISIM AS HASTA_ISIM,
+    H.SOYISIM AS HASTA_SOYISIM,
+	R.RANDEVU_TURU,
+    CONVERT(VARCHAR, R.HASTA_GELIS_TARIHI, 104) AS HASTA_GELIS_TARIHI,
+    CONVERT(VARCHAR, R.HASTA_GELIS_SAATI, 108) AS HASTA_GELIS_SAATI,
+	T.TESHIS_ISMI,
+	A.AMELIYAT_ID,
+	A.AMELIYAT_ISMI,
+	K.KAN_ISIM,
+
+    CASE
+    WHEN dbo.CalculateMonthsSinceLastAppointment(H.TC) > 6 THEN 'Uzun Süreli'
+    WHEN dbo.CalculateMonthsSinceLastAppointment(H.TC) > 3 THEN 'Orta Süreli'
+    ELSE 'Kýsa Süreli'
+END AS RandevuDurumu
+
+FROM
+    TBLRANDEVU R
+JOIN
+    TBLHASTA H ON R.TC = H.TC
+JOIN
+	TBLRANDEVU_TESHISI RT ON R.RANDEVU_ID = RT.RANDEVU_ID
+JOIN 
+    TBLTESHIS T ON RT.TESHÝS_ID = T.TESHIS_ID
+LEFT JOIN 
+    TBLAMELIYAT A ON RT.AMELIYAT_ID= A.AMELIYAT_ID
+ JOIN 
+    TBLKANGRUBU K ON K.KAN_ID = H.KAN_ID
+
+     
+GO
+
+-- VIEW test kodu
+SELECT 
+    RBV.HASTA_ISIM,
+    RBV.HASTA_SOYISIM,
+    RBV.RANDEVU_TURU,
+    RBV.RandevuDurumu,
+	RBV.KAN_ISIM,
+	
+	CASE
+    WHEN RBV.AMELIYAT_ID = 1 THEN 'Ameliyat Gerekir'
+	WHEN RBV.AMELIYAT_ID = 2 THEN 'Ameliyat Gerekir'
+	WHEN RBV.AMELIYAT_ID = 3 THEN 'Ameliyat Gerekir'
+    WHEN RBV.AMELIYAT_ID IS NULL THEN 'Ameliyat Gerekmez'
+END AS AmeliyatDurumu
+
+
+	FROM
+    dbo.RandevuBilgileriView RBV
+
+
+
+
+
+
